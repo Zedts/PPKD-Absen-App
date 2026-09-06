@@ -1,48 +1,69 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# =========================================================================
+# 1. OS & Sistem Operasi (Miscellaneous)
+# =========================================================================
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
+*.log
+*.swp
+*.class
+*.pyc
 .svn/
-.swiftpm/
+.history
 migrate_working_dir/
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# =========================================================================
+# 2. Flutter / Dart / Pub Tooling & Artifacts
+# =========================================================================
 .dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
 .pub/
+.pub-cache/
 /build/
 /coverage/
+**/doc/api/
+.flutter-plugins-dependencies
 
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
+# =========================================================================
+# 3. Android Specifics
+# =========================================================================
 /android/app/debug
 /android/app/profile
 /android/app/release
 
-# Widget Preview related
-.widget_preview/
+# =========================================================================
+# 4. iOS / Swift Specifics
+# =========================================================================
+**/ios/Flutter/.last_build_id
+.build/
+.buildlog/
+.swiftpm/
+
+# =========================================================================
+# 5. Obfuscation & Symbolication (Production Builds)
+# =========================================================================
+app.*.symbols
+app.*.map.json
+
+# =========================================================================
+# 6. IDEs & Code Editors
+# =========================================================================
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+devtools_options.yaml
+
+# Text Editors
+graphify-out/*
+!graphify-out/graph.json
+
+# =========================================================================
+# 7. Environment Variables & Sensitive Data
+# =========================================================================
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+
+# Etc
+ref/
