@@ -32,7 +32,31 @@ class AppTextStyles {
     color: AppColors.primaryBlue,
   );
 
+  static TextStyle headingLilita = GoogleFonts.lilitaOne(
+    fontSize: 22,
+    letterSpacing: 0.5,
+    color: AppColors.textDark,
+  );
+
+  static TextStyle headingLilitaWhite = GoogleFonts.lilitaOne(
+    fontSize: 22,
+    letterSpacing: 0.5,
+    color: AppColors.white,
+  );
+
+  static TextStyle statNumber = GoogleFonts.lilitaOne(
+    fontSize: 24,
+    letterSpacing: 0.5,
+    color: AppColors.textDark,
+  );
+
   // ── Accent (Pacifico) ─────────────────────────────────────────────────
+
+  static TextStyle accentPacifico = GoogleFonts.pacifico(
+    fontSize: 16,
+    fontWeight: FontWeight.w400,
+    color: AppColors.textLight,
+  );
 
   static TextStyle accentHeading = GoogleFonts.pacifico(
     fontSize: 28,
@@ -49,6 +73,12 @@ class AppTextStyles {
   static TextStyle headingSmall = GoogleFonts.plusJakartaSans(
     fontSize: 18,
     fontWeight: FontWeight.bold,
+    color: AppColors.textDark,
+  );
+
+  static TextStyle titleMedium = GoogleFonts.plusJakartaSans(
+    fontSize: 16,
+    fontWeight: FontWeight.w700,
     color: AppColors.textDark,
   );
 
@@ -75,6 +105,24 @@ class AppTextStyles {
     fontSize: 14,
     fontWeight: FontWeight.w400,
     color: AppColors.textLight,
+  );
+
+  static TextStyle caption = GoogleFonts.plusJakartaSans(
+    fontSize: 12,
+    fontWeight: FontWeight.w500,
+    color: AppColors.textLight,
+  );
+
+  static TextStyle captionSmall = GoogleFonts.plusJakartaSans(
+    fontSize: 11,
+    fontWeight: FontWeight.w600,
+    color: AppColors.textLight,
+  );
+
+  static TextStyle badgeText = GoogleFonts.plusJakartaSans(
+    fontSize: 11,
+    fontWeight: FontWeight.w700,
+    color: AppColors.primaryBlue,
   );
 
   static TextStyle errorText = GoogleFonts.plusJakartaSans(

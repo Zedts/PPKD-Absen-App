@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_text_styles.dart';
 
 /// Toast notification widget matching the HTML reference.
 class ToastOverlay {
@@ -87,9 +88,8 @@ class _ToastWidgetState extends State<_ToastWidget>
               ),
               child: Text(
                 widget.message,
-                style: const TextStyle(
+                style: AppTextStyles.bodySmall.copyWith(
                   color: Colors.white,
-                  fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),

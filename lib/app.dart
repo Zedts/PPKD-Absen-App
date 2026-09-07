@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'core/providers/attendance_provider.dart';
 import 'core/providers/auth_provider.dart';
 import 'core/providers/navigation_provider.dart';
+import 'core/providers/notification_provider.dart';
+import 'core/providers/profile_provider.dart';
 import 'core/services/dio_client.dart';
 import 'core/services/secure_storage_service.dart';
 import 'core/theme/app_theme.dart';
@@ -34,8 +37,22 @@ class PpkdAbsenApp extends StatelessWidget {
             dioClient: dioClient,
           )..init(),
         ),
+        ChangeNotifierProvider<AttendanceProvider>(
+          create: (_) => AttendanceProvider(
+            dioClient: dioClient,
+          ),
+        ),
+        ChangeNotifierProvider<ProfileProvider>(
+          create: (_) => ProfileProvider(
+            dioClient: dioClient,
+            storage: storageService,
+          ),
+        ),
         ChangeNotifierProvider<NavigationProvider>(
           create: (_) => NavigationProvider(),
+        ),
+        ChangeNotifierProvider<NotificationProvider>(
+          create: (_) => NotificationProvider()..init(),
         ),
       ],
       child: Consumer<AuthProvider>(

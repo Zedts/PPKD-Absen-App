@@ -2,7 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../constants/app_constants.dart';
 
-/// Wrapper around [FlutterSecureStorage] for typed access to session data.
+/// Wrapper around [FlutterSecureStorage] for typed access to secure session data.
 class SecureStorageService {
   final FlutterSecureStorage _storage;
 
@@ -23,7 +23,7 @@ class SecureStorageService {
     await _storage.delete(key: AppConstants.tokenKey);
   }
 
-  // ── User Info ──────────────────────────────────────────────────────────
+  // ── User Session ───────────────────────────────────────────────────────
 
   Future<void> saveUserInfo({
     required int id,

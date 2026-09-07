@@ -17,3 +17,5 @@ For help getting started with Flutter development, view the
 samples, guidance on mobile development, and a full API reference.
 
 Add your GOOGLE_MAPS_API_KEY at android\local.properties
+
+For models .g.dart use dart run build_runner build --delete-conflicting-outputs

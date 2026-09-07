@@ -80,8 +80,8 @@ class MainShell extends StatelessWidget {
             ),
             // Profil
             CrystalNavigationBarItem(
-              icon: Icons.person_rounded,
-              unselectedIcon: Iconsax.user,
+              icon: Iconsax.profile_circle5,
+              unselectedIcon: Iconsax.profile_circle,
               selectedColor: AppColors.primaryBlue,
               unselectedColor: AppColors.textLight,
             ),
