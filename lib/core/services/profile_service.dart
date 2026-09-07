@@ -17,7 +17,7 @@ abstract class ProfileService {
     @Body() Map<String, dynamic> body,
   );
 
-  @PUT('/api/profile/photo')
+  @PUT(ApiConstants.profilePhoto)
   Future<HttpResponse<dynamic>> updateProfilePhoto(
     @Body() Map<String, dynamic> body,
   );

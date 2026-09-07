@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../../core/utils/validators.dart';
 import '../../widgets/auth/auth_background.dart';
 import '../../widgets/common/back_button_circle.dart';
@@ -45,7 +46,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String _jenisKelamin = 'L'; // 'L' or 'P'
   int _batchId = 1; // Default Batch 1
   int? _trainingId; // Dropdown from AuthProvider.trainings
-  final String _profilePhoto = ''; // Optional profile photo (default empty string)
+  PickedPhotoResult? _pickedPhoto;
+  String get _profilePhoto => _pickedPhoto?.base64DataUri ?? '';
+
+  Future<void> _handlePickPhoto() async {
+    final action = await ImagePickerHelper.showSourcePicker(
+      context,
+      showDeleteOption: _pickedPhoto != null,
+    );
+    if (action == null || !mounted) return;
+
+    if (action == ImagePickerAction.delete) {
+      _handleRemovePhoto();
+      return;
+    }
+
+    final source = action == ImagePickerAction.camera
+        ? ImageSource.camera
+        : ImageSource.gallery;
+    final result = await ImagePickerHelper.pickImage(source);
+    if (result != null && mounted) {
+      setState(() {
+        _pickedPhoto = result;
+      });
+    }
+  }
+
+  void _handleRemovePhoto() {
+    setState(() {
+      _pickedPhoto = null;
+    });
+  }
 
   @override
   void initState() {
@@ -181,58 +212,78 @@ class _RegisterScreenState extends State<RegisterScreen> {
       bottomContent: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Optional Profile Photo Badge
+          // Profile Photo Picker (Optional)
           Center(
-            child: GestureDetector(
-              onTap: () {
-                ToastOverlay.show(
-                  context,
-                  'Foto profil bersifat opsional (dapat diatur di menu profil)',
-                );
-              },
-              child: Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  Container(
-                    width: 72,
-                    height: 72,
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
+                GestureDetector(
+                  onTap: _handlePickPhoto,
+                  child: Container(
+                    width: 76,
+                    height: 76,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: AppColors.background,
                       border: Border.all(
-                        color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                        color: _pickedPhoto != null
+                            ? AppColors.primaryBlue
+                            : AppColors.primaryBlue.withValues(alpha: 0.3),
                         width: 2,
                       ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryBlue.withValues(alpha: 0.12),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
                     ),
-                    child: const Icon(
-                      Iconsax.user,
-                      size: 36,
-                      color: AppColors.textLight,
-                    ),
+                    child: _pickedPhoto != null
+                        ? ClipOval(
+                            child: Image.file(
+                              _pickedPhoto!.file,
+                              width: 76,
+                              height: 76,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : const Icon(
+                            Iconsax.user,
+                            size: 36,
+                            color: AppColors.textLight,
+                          ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
-                      color: AppColors.primaryBlue,
+                ),
+                GestureDetector(
+                  onTap: _pickedPhoto != null ? _handleRemovePhoto : _handlePickPhoto,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: _pickedPhoto != null ? AppColors.error : AppColors.primaryBlue,
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
-                    child: const Icon(
-                      Iconsax.camera,
-                      size: 14,
+                    child: Icon(
+                      _pickedPhoto != null ? Iconsax.trash : Iconsax.camera,
+                      size: 13,
                       color: Colors.white,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 6),
           Center(
             child: Text(
-              'Foto Profil (Opsional)',
+              _pickedPhoto != null
+                  ? 'Ketuk untuk mengganti • Ikon merah untuk hapus'
+                  : 'Foto Profil (Opsional)',
               style: AppTextStyles.bodySmall.copyWith(
                 fontSize: 12,
-                color: AppColors.textLight,
+                color: _pickedPhoto != null ? AppColors.primaryBlue : AppColors.textLight,
+                fontWeight: _pickedPhoto != null ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
           ),

@@ -35,6 +35,33 @@ class UserModel {
     this.updatedAt,
   });
 
+  UserModel copyWith({
+    int? id,
+    String? name,
+    String? email,
+    String? jenisKelamin,
+    String? profilePhoto,
+    bool clearProfilePhoto = false,
+    int? batchId,
+    int? trainingId,
+    String? emailVerifiedAt,
+    String? createdAt,
+    String? updatedAt,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      jenisKelamin: jenisKelamin ?? this.jenisKelamin,
+      profilePhoto: clearProfilePhoto ? null : (profilePhoto ?? this.profilePhoto),
+      batchId: batchId ?? this.batchId,
+      trainingId: trainingId ?? this.trainingId,
+      emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) =>
       _$UserModelFromJson(json);
 

@@ -28,7 +28,27 @@ class AppWavyHeader extends StatelessWidget {
       height: height,
       width: double.infinity,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
+          // Extended blue background for pull-to-refresh overscroll (above the wave)
+          Positioned(
+            top: -1000,
+            left: 0,
+            right: 0,
+            height: 1000 + 40,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: AppColors.primaryBlue,
+                gradient: RadialGradient(
+                  center: Alignment(-0.7, -0.4),
+                  radius: 1.2,
+                  colors: [AppColors.primaryLight, AppColors.primaryBlue],
+                  stops: [0.0, 0.7],
+                ),
+              ),
+            ),
+          ),
+
           // Background with Auth screen radial gradient + gentle wave
           ClipPath(
             clipper: _HeaderWaveClipper(),

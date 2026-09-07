@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../database/notification_database_service.dart';
@@ -6,9 +8,14 @@ import '../models/app_notification_model.dart';
 /// Provider managing reactive notification state and SQFlite integration.
 class NotificationProvider extends ChangeNotifier {
   final NotificationDatabaseService _dbService;
+  StreamSubscription<void>? _dbSubscription;
 
   NotificationProvider({NotificationDatabaseService? dbService})
-      : _dbService = dbService ?? NotificationDatabaseService.instance;
+      : _dbService = dbService ?? NotificationDatabaseService.instance {
+    _dbSubscription = _dbService.onDatabaseChanged.listen((_) {
+      loadNotifications();
+    });
+  }
 
   List<AppNotificationModel> _notifications = [];
   List<AppNotificationModel> get notifications => _notifications;
@@ -112,5 +119,11 @@ class NotificationProvider extends ChangeNotifier {
     } catch (_) {
       await loadNotifications();
     }
+  }
+
+  @override
+  void dispose() {
+    _dbSubscription?.cancel();
+    super.dispose();
   }
 }

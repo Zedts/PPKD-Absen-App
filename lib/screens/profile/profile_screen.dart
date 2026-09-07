@@ -4,6 +4,7 @@ import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/providers/attendance_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/providers/profile_provider.dart';
@@ -11,6 +12,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_wavy_header.dart';
 import '../../widgets/common/custom_text_field.dart';
+import '../../core/utils/image_picker_helper.dart';
 import '../../widgets/common/notification_modal.dart';
 import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/toast_overlay.dart';
@@ -25,12 +27,151 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
+  bool _isUploadingPhoto = false;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<ProfileProvider>().fetchProfile();
     });
+  }
+
+  Future<void> _handleEditProfilePhoto() async {
+    final profileProv = context.read<ProfileProvider>();
+    final currentPhoto = profileProv.user?.profilePhoto;
+    final hasPhoto = currentPhoto != null && currentPhoto.trim().isNotEmpty;
+
+    final action = await ImagePickerHelper.showSourcePicker(
+      context,
+      showDeleteOption: hasPhoto,
+    );
+    if (action == null || !mounted) return;
+
+    if (action == ImagePickerAction.delete) {
+      await _confirmDeleteProfilePhoto();
+      return;
+    }
+
+    final source = action == ImagePickerAction.camera
+        ? ImageSource.camera
+        : ImageSource.gallery;
+    final result = await ImagePickerHelper.pickImage(source);
+    if (result == null || !mounted) return;
+
+    setState(() => _isUploadingPhoto = true);
+    final success = await profileProv.updateProfilePhoto(result.base64DataUri);
+
+    if (!mounted) return;
+    setState(() => _isUploadingPhoto = false);
+
+    if (success) {
+      context.read<AuthProvider>().updateProfilePhoto(profileProv.user?.profilePhoto);
+      ToastOverlay.show(context, 'Foto profil berhasil diperbarui!');
+      await context.read<NotificationProvider>().addNotification(
+            title: 'Foto Profil Diperbarui',
+            message: 'Foto profil akun Anda telah berhasil diperbarui.',
+            type: 'profile',
+          );
+    } else {
+      ToastOverlay.show(
+        context,
+        profileProv.errorMessage ?? 'Gagal memperbarui foto profil.',
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteProfilePhoto() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Iconsax.trash, color: AppColors.error, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Hapus Foto Profil',
+                style: AppTextStyles.headingSmall.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus foto profil ini? Avatar akan kembali menggunakan inisial nama.',
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textLight),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Batal',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textLight,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            ),
+            child: Text(
+              'Hapus',
+              style: AppTextStyles.bodyMedium.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isUploadingPhoto = true);
+    final profileProv = context.read<ProfileProvider>();
+    final success = await profileProv.deleteProfilePhoto();
+
+    if (!mounted) return;
+    setState(() => _isUploadingPhoto = false);
+
+    if (success) {
+      context.read<AuthProvider>().clearProfilePhoto();
+      ToastOverlay.show(context, 'Foto profil berhasil dihapus!');
+      await context.read<NotificationProvider>().addNotification(
+            title: 'Foto Profil Dihapus',
+            message: 'Foto profil akun Anda telah berhasil dihapus.',
+            type: 'profile',
+          );
+    } else {
+      ToastOverlay.show(
+        context,
+        profileProv.errorMessage ?? 'Gagal menghapus foto profil.',
+      );
+    }
   }
 
   void _showEditProfileModal(BuildContext context, String currentName) {
@@ -387,6 +528,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final email = user?.email ?? 'peserta@ppkd.jakarta.go.id';
     final jenisKelamin = user?.jenisKelamin;
 
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 140;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
@@ -408,7 +551,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
 
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding),
                 child: Column(
                   children: [
                     // ── Avatar & User Info Card ─────────────────────────
@@ -429,33 +572,95 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Column(
                     children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [
-                              AppColors.primaryLight,
-                              AppColors.primaryBlue,
-                            ],
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color:
-                                  AppColors.primaryBlue.withValues(alpha: 0.3),
-                              blurRadius: 12,
-                              offset: const Offset(0, 6),
+                      GestureDetector(
+                        onTap: _isUploadingPhoto ? null : _handleEditProfilePhoto,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    AppColors.primaryLight,
+                                    AppColors.primaryBlue,
+                                  ],
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: AppColors.primaryBlue.withValues(alpha: 0.3),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: ClipOval(
+                                child: ImagePickerHelper.buildAvatarImage(
+                                  photoUrlOrBase64: user?.profilePhoto,
+                                  width: 80,
+                                  height: 80,
+                                  fallback: Center(
+                                    child: Text(
+                                      name.isNotEmpty
+                                          ? name[0].toUpperCase()
+                                          : 'P',
+                                      style: AppTextStyles
+                                          .headingLilitaWhite
+                                          .copyWith(
+                                        fontSize: 32,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            if (_isUploadingPhoto)
+                              Positioned.fill(
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.black.withValues(alpha: 0.4),
+                                  ),
+                                  child: const Center(
+                                    child: SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: AppColors.primaryBlue,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.15),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Iconsax.camera,
+                                  color: Colors.white,
+                                  size: 13,
+                                ),
+                              ),
                             ),
                           ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            name.isNotEmpty ? name[0].toUpperCase() : 'P',
-                            style: AppTextStyles.headingLilitaWhite.copyWith(
-                              fontSize: 32,
-                            ),
-                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -589,6 +794,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           },
                         ),
                         const Divider(color: AppColors.inputBorder, height: 1),
+                        Consumer<AttendanceProvider>(
+                          builder: (context, attendanceProv, _) {
+                            return _ProfileMenuTile(
+                              icon: Iconsax.clock,
+                              title: 'Auto Absen Pulang',
+                              subtitle: attendanceProv.autoCheckOutEnabled
+                                  ? 'Aktif • Pukul 16:00'
+                                  : 'Nonaktif',
+                              showChevron: false,
+                              trailingWidget: Switch.adaptive(
+                                value: attendanceProv.autoCheckOutEnabled,
+                                onChanged: (val) =>
+                                    attendanceProv.setAutoCheckOut(val),
+                                activeTrackColor: AppColors.primaryBlue,
+                              ),
+                              onTap: () => attendanceProv.setAutoCheckOut(
+                                !attendanceProv.autoCheckOutEnabled,
+                              ),
+                            );
+                          },
+                        ),
+                        const Divider(color: AppColors.inputBorder, height: 1),
                         _ProfileMenuTile(
                           icon: Iconsax.info_circle,
                           title: 'Tentang Aplikasi',
@@ -674,6 +901,8 @@ class _ProfileMenuTile extends StatelessWidget {
       ),
       title: Text(
         title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: AppTextStyles.bodyMedium.copyWith(
           fontSize: 14,
           fontWeight: FontWeight.w600,
@@ -683,6 +912,8 @@ class _ProfileMenuTile extends StatelessWidget {
       subtitle: subtitle != null
           ? Text(
               subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: AppTextStyles.captionSmall.copyWith(
                 color: AppColors.textLight,
               ),
@@ -691,10 +922,8 @@ class _ProfileMenuTile extends StatelessWidget {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (trailingWidget != null) ...[
-            trailingWidget!,
-            const SizedBox(width: 6),
-          ],
+          ?trailingWidget,
+          if (trailingWidget != null && showChevron) const SizedBox(width: 6),
           if (showChevron)
             const Icon(
               Iconsax.arrow_right_3,

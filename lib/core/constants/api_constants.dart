@@ -17,18 +17,15 @@ class ApiConstants {
   static const String absenToday = '/api/absen/today';
   static const String absenStats = '/api/absen/stats';
   static const String absenHistory = '/api/absen/history';
-  static const String deleteAbsen = '/api/absen/{id}';
 
   // Izin
   static const String izin = '/api/izin';
 
   // Profile
   static const String profile = '/api/profile';
+  static const String profilePhoto = '/api/profile/photo';
 
   // Trainings & Batches
   static const String trainings = '/api/trainings';
   static const String batches = '/api/batches';
-
-  // Device
-  static const String deviceToken = '/api/device-token';
 }

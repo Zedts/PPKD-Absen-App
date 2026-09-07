@@ -58,8 +58,47 @@ class AttendanceModel {
     return null;
   }
 
-  factory AttendanceModel.fromJson(Map<String, dynamic> json) =>
-      _$AttendanceModelFromJson(json);
+  bool get isIzin => (status ?? '').toLowerCase() == 'izin';
+
+  bool get isTerlambat {
+    if (isIzin) return false;
+    if ((status ?? '').toLowerCase() == 'terlambat') return true;
+    if (checkInTime != null && checkInTime!.isNotEmpty) {
+      try {
+        final timeOnly = checkInTime!.contains(' ')
+            ? checkInTime!.split(' ').last
+            : (checkInTime!.contains('T')
+                ? checkInTime!.split('T').last
+                : checkInTime!);
+        final parts = timeOnly.split(':');
+        if (parts.length >= 2) {
+          final h = int.parse(parts[0]);
+          final m = int.parse(parts[1]);
+          if (h > 8 || (h == 8 && m > 0)) {
+            return true;
+          }
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
+  bool get isHadir {
+    if (isIzin || isTerlambat) return false;
+    return (status ?? '').toLowerCase() == 'masuk' ||
+        (checkInTime != null && checkInTime!.isNotEmpty);
+  }
+
+  factory AttendanceModel.fromJson(Map<String, dynamic> json) {
+    final copy = Map<String, dynamic>.from(json);
+    if (copy['check_in_time'] == null && copy['check_in'] != null) {
+      copy['check_in_time'] = copy['check_in'];
+    }
+    if (copy['check_out_time'] == null && copy['check_out'] != null) {
+      copy['check_out_time'] = copy['check_out'];
+    }
+    return _$AttendanceModelFromJson(copy);
+  }
 
   Map<String, dynamic> toJson() => _$AttendanceModelToJson(this);
 }

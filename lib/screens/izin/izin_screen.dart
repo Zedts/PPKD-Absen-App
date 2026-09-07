@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/models/attendance_model.dart';
 import '../../core/providers/attendance_provider.dart';
 import '../../core/providers/notification_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
 import '../../widgets/common/app_wavy_header.dart';
+import '../../widgets/common/attendance_history_card.dart';
+import '../../widgets/common/month_selector_bar.dart';
 import '../../widgets/common/primary_button.dart';
 import '../../widgets/common/toast_overlay.dart';
 
@@ -19,15 +20,20 @@ class IzinScreen extends StatefulWidget {
 }
 
 class _IzinScreenState extends State<IzinScreen> {
-  int _selectedFilter = 0;
-  final List<String> _filters = ['Semua', 'Izin', 'Sakit'];
+  late DateTime _selectedMonth;
 
   @override
   void initState() {
     super.initState();
+    final now = DateTime.now();
+    _selectedMonth = DateTime(now.year, now.month, 1);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<AttendanceProvider>().fetchHistory();
+      _fetchData();
     });
+  }
+
+  void _fetchData() {
+    context.read<AttendanceProvider>().fetchHistoryForMonth(_selectedMonth);
   }
 
   void _showFormIzinModal(BuildContext context) {
@@ -77,7 +83,7 @@ class _IzinScreenState extends State<IzinScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Pengajuan Izin / Sakit',
+                          'Pengajuan Izin',
                           style: AppTextStyles.headingSmall.copyWith(
                             fontWeight: FontWeight.bold,
                             color: AppColors.textDark,
@@ -255,6 +261,9 @@ class _IzinScreenState extends State<IzinScreen> {
                                 );
                             if (context.mounted) {
                               Navigator.of(ctx).pop();
+                              // Also refresh today data for hasIzinToday
+                              provider.fetchToday();
+                              _fetchData();
                               ToastOverlay.show(
                                 context,
                                 'Pengajuan izin berhasil dikirim!',
@@ -279,34 +288,20 @@ class _IzinScreenState extends State<IzinScreen> {
     );
   }
 
-  List<AttendanceModel> _getFilteredList(List<AttendanceModel> list) {
-    if (_selectedFilter == 1) {
-      // Izin (non-sakit)
-      return list.where((item) {
-        final r = (item.alasanIzin ?? '').toLowerCase();
-        return !r.contains('sakit') && !r.contains('dokter');
-      }).toList();
-    } else if (_selectedFilter == 2) {
-      // Sakit
-      return list.where((item) {
-        final r = (item.alasanIzin ?? '').toLowerCase();
-        return r.contains('sakit') || r.contains('dokter') || r.contains('demam');
-      }).toList();
-    }
-    return list;
-  }
 
   @override
   Widget build(BuildContext context) {
     final attendance = context.watch<AttendanceProvider>();
-    final izinList = _getFilteredList(attendance.izinList);
+    final izinList = attendance.izinList;
     final isLoading = attendance.isLoading;
+
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 140;
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: () async {
-          await context.read<AttendanceProvider>().fetchHistory();
+          _fetchData();
         },
         color: AppColors.primaryBlue,
         child: SingleChildScrollView(
@@ -319,7 +314,7 @@ class _IzinScreenState extends State<IzinScreen> {
               // ── Top Wavy Header ──────────────────────────────────────
               AppWavyHeader(
                 subtitle: 'Daftar Perizinan,',
-                title: 'IZIN & SAKIT',
+                title: 'IZIN',
                 height: 175,
                 trailing: ElevatedButton.icon(
                   onPressed: () => _showFormIzinModal(context),
@@ -347,68 +342,23 @@ class _IzinScreenState extends State<IzinScreen> {
               ),
 
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 120),
+                padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Filter Tabs
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      child: Row(
-                        children: List.generate(_filters.length, (index) {
-                          final isSelected = _selectedFilter == index;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: GestureDetector(
-                              onTap: () =>
-                                  setState(() => _selectedFilter = index),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 200),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: isSelected
-                                      ? AppColors.primaryBlue
-                                      : Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(
-                                    color: isSelected
-                                        ? AppColors.primaryBlue
-                                        : AppColors.inputBorder,
-                                  ),
-                                  boxShadow: [
-                                    if (isSelected)
-                                      BoxShadow(
-                                        color: AppColors.primaryBlue
-                                            .withValues(alpha: 0.25),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 3),
-                                      ),
-                                  ],
-                                ),
-                                child: Text(
-                                  _filters[index],
-                                  style: AppTextStyles.captionSmall.copyWith(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : AppColors.textDark,
-                                    fontWeight: isSelected
-                                        ? FontWeight.bold
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                      ),
+                    // ── Month Selector ──────────────────────────────────────
+                    MonthSelectorBar(
+                      selectedMonth: _selectedMonth,
+                      onMonthChanged: (newMonth) {
+                        setState(() {
+                          _selectedMonth = newMonth;
+                        });
+                        _fetchData();
+                      },
                     ),
-                const SizedBox(height: 20),
+                    const SizedBox(height: 16),
 
-                // Content (Loading / Empty / List)
+                    // Content (Loading / Empty / List)
                 if (isLoading)
                   const Center(
                     child: Padding(
@@ -430,6 +380,13 @@ class _IzinScreenState extends State<IzinScreen> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(color: AppColors.inputBorder),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -470,123 +427,13 @@ class _IzinScreenState extends State<IzinScreen> {
                   )
                 else
                   ListView.separated(
+                    padding: EdgeInsets.zero,
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
                     itemCount: izinList.length,
                     separatorBuilder: (context, index) => const SizedBox(height: 12),
                     itemBuilder: (context, index) {
-                      final item = izinList[index];
-                      final isSakit = (item.alasanIzin ?? '')
-                              .toLowerCase()
-                              .contains('sakit') ||
-                          (item.alasanIzin ?? '')
-                              .toLowerCase()
-                              .contains('dokter');
-
-                      return Container(
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.inputBorder),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.03),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: (isSakit
-                                                ? const Color(0xFFEF4444)
-                                                : const Color(0xFFF59E0B))
-                                            .withValues(alpha: 0.12),
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                      child: Icon(
-                                        isSakit
-                                            ? Iconsax.health
-                                            : Iconsax.document_text,
-                                        size: 16,
-                                        color: isSakit
-                                            ? const Color(0xFFEF4444)
-                                            : const Color(0xFFF59E0B),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 10),
-                                    Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          isSakit
-                                              ? 'Surat Sakit'
-                                              : 'Izin Tidak Hadir',
-                                          style: AppTextStyles.bodyMedium.copyWith(
-                                            fontWeight: FontWeight.bold,
-                                            color: AppColors.textDark,
-                                          ),
-                                        ),
-                                        Text(
-                                          item.attendanceDate ?? '-',
-                                          style: AppTextStyles.captionSmall.copyWith(
-                                            color: AppColors.textLight,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 10,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF10B981)
-                                        .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Text(
-                                    'Tercatat',
-                                    style: AppTextStyles.captionSmall.copyWith(
-                                      color: const Color(0xFF10B981),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.background.withValues(alpha: 0.5),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                item.alasanIzin ?? 'Tidak ada alasan tertulis',
-                                style: AppTextStyles.bodySmall.copyWith(
-                                  color: AppColors.textDark,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
+                      return AttendanceHistoryCard(item: izinList[index]);
                     },
                   ),
               ],

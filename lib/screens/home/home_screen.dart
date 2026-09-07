@@ -48,6 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     attendance.fetchToday();
     attendance.fetchStats();
+    attendance.fetchHistory(); // Needed for hasIzinToday check
     profile.fetchProfile();
 
     await attendance.checkPermissionsAndGetLocation();
@@ -126,20 +127,23 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _handleCheckIn() async {
     final attendance = context.read<AttendanceProvider>();
+    final checkInTime = DateTime.now();
     final success = await attendance.checkIn();
     if (!mounted) return;
 
     if (success) {
-      final now = DateTime.now();
       final timeStr =
-          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+          '${checkInTime.hour.toString().padLeft(2, '0')}:${checkInTime.minute.toString().padLeft(2, '0')}';
+      final displayStatus = attendance.getAttendanceDisplayStatus(checkInTime);
       await context.read<NotificationProvider>().addNotification(
             title: 'Absen Masuk Berhasil',
             message:
-                'Presensi masuk berhasil dicatat pada $timeStr WIB di ${AppConstants.officeName}.',
+                'Presensi masuk berhasil dicatat pada $timeStr WIB di ${AppConstants.officeName}. Status: $displayStatus.',
             type: 'check_in',
           );
-      if (mounted) ToastOverlay.show(context, 'Absen masuk berhasil!');
+      if (mounted) {
+        ToastOverlay.show(context, 'Absen masuk berhasil! ($displayStatus)');
+      }
     } else {
       final msg = attendance.errorMessage ?? 'Gagal absen masuk.';
       ToastOverlay.show(context, msg);
@@ -193,16 +197,19 @@ class _HomeScreenState extends State<HomeScreen> {
     final today = attendance.todayAttendance;
     final stats = attendance.stats;
 
-    final hasCheckedIn = today?.checkInTime != null;
-    final hasCheckedOut = today?.checkOutTime != null;
+    final hasCheckedIn = attendance.hasCheckedIn;
+    final hasCheckedOut = attendance.hasCheckedOut;
     final isWithinRadius = attendance.isWithinRadius;
     final isLocationLoading = attendance.isLocationLoading;
     final isActionLoading = attendance.isLoading;
+    final hasIzinToday = attendance.hasIzinToday;
 
     final distanceMeters = attendance.distanceToOffice;
     final formattedDistance = distanceMeters >= 1000
         ? '${(distanceMeters / 1000).toStringAsFixed(2)} km'
         : '${distanceMeters.toStringAsFixed(0)} m';
+
+    final bottomPadding = MediaQuery.of(context).padding.bottom + 140;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -227,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
 
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 120),
+                padding: EdgeInsets.fromLTRB(20, 8, 20, bottomPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -641,19 +648,25 @@ class _HomeScreenState extends State<HomeScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: hasCheckedOut
-                                  ? const Color(0xFF3B82F6)
-                                  : (hasCheckedIn
-                                      ? const Color(0xFF22C55E)
-                                      : Colors.white.withValues(alpha: 0.2)),
+                              color: hasIzinToday
+                                  ? const Color(0xFFF59E0B)
+                                  : hasCheckedOut
+                                      ? const Color(0xFF3B82F6)
+                                      : (hasCheckedIn
+                                          ? (attendance.getAttendanceDisplayStatus() == 'Terlambat'
+                                              ? AppColors.error
+                                              : const Color(0xFF22C55E))
+                                          : Colors.white.withValues(alpha: 0.2)),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
-                              hasCheckedOut
-                                  ? 'Selesai'
-                                  : (hasCheckedIn
-                                      ? 'Sudah Masuk'
-                                      : 'Belum Presensi'),
+                              hasIzinToday
+                                  ? 'Izin'
+                                  : hasCheckedOut
+                                      ? 'Selesai'
+                                      : (hasCheckedIn
+                                          ? attendance.getAttendanceDisplayStatus()
+                                          : 'Belum Presensi'),
                               style: AppTextStyles.captionSmall.copyWith(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -750,6 +763,37 @@ class _HomeScreenState extends State<HomeScreen> {
                                   strokeWidth: 2.5,
                                   color: AppColors.primaryBlue,
                                 ),
+                              ),
+                            );
+                          }
+
+                          // Izin status — disable all attendance actions
+                          if (hasIzinToday) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: Colors.white.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Iconsax.document_text,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Anda sedang dalam status Izin',
+                                    style: AppTextStyles.bodyMedium.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             );
                           }
@@ -919,8 +963,8 @@ class _HomeScreenState extends State<HomeScreen> {
                       icon: Iconsax.chart_2,
                       color: AppColors.primaryBlue,
                     ),
-                    ],
-                  ),
+                  ],
+                ),
                 ],
               ),
             ),

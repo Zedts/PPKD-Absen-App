@@ -40,7 +40,7 @@ class PpkdAbsenApp extends StatelessWidget {
         ChangeNotifierProvider<AttendanceProvider>(
           create: (_) => AttendanceProvider(
             dioClient: dioClient,
-          ),
+          )..initAutoCheckOut(),
         ),
         ChangeNotifierProvider<ProfileProvider>(
           create: (_) => ProfileProvider(

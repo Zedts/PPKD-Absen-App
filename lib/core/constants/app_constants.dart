@@ -7,6 +7,7 @@ class AppConstants {
   static const String userIdKey = 'user_id';
   static const String userNameKey = 'user_name';
   static const String userEmailKey = 'user_email';
+  static const String userProfilePhotoKey = 'user_profile_photo';
 
   // Validation
   static const int minPasswordLength = 8;

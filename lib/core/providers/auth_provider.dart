@@ -66,8 +66,9 @@ class AuthProvider extends ChangeNotifier {
     if (_isLoggedIn) {
       final name = await _storage.getUserName();
       final email = await _storage.getUserEmail();
+      final photo = await _storage.getProfilePhoto();
       if (name != null && email != null) {
-        _user = UserModel(id: 0, name: name, email: email);
+        _user = UserModel(id: 0, name: name, email: email, profilePhoto: photo);
       }
     }
     notifyListeners();
@@ -110,8 +111,9 @@ class AuthProvider extends ChangeNotifier {
 
       final data = response.data;
       final authData = AuthData.fromJson(data['data'] as Map<String, dynamic>);
+      final existingPhoto = await _storage.getProfilePhoto();
 
-      await _saveSession(authData);
+      await _saveSession(authData, initialPhoto: existingPhoto);
       _isLoggedIn = true;
       notifyListeners();
       return true;
@@ -155,7 +157,10 @@ class AuthProvider extends ChangeNotifier {
       final data = response.data;
       final authData = AuthData.fromJson(data['data'] as Map<String, dynamic>);
 
-      await _saveSession(authData);
+      await _saveSession(
+        authData,
+        initialPhoto: profilePhoto.isNotEmpty ? profilePhoto : null,
+      );
       _isLoggedIn = true;
       notifyListeners();
       return true;
@@ -231,14 +236,41 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Helpers ────────────────────────────────────────────────────────────
 
-  Future<void> _saveSession(AuthData authData) async {
-    _user = authData.user;
+  Future<void> _saveSession(AuthData authData, {String? initialPhoto}) async {
+    final photo = (initialPhoto != null && initialPhoto.isNotEmpty)
+        ? initialPhoto
+        : authData.user.profilePhoto;
+    if (photo != null && photo.isNotEmpty) {
+      _user = authData.user.copyWith(profilePhoto: photo);
+      await _storage.saveProfilePhoto(photo);
+    } else {
+      _user = authData.user;
+    }
     await _storage.saveToken(authData.token);
     await _storage.saveUserInfo(
       id: authData.user.id,
       name: authData.user.name,
       email: authData.user.email,
+      profilePhoto: photo,
     );
+  }
+
+  void updateProfilePhoto(String? photo) {
+    if (_user != null) {
+      if (photo == null || photo.trim().isEmpty) {
+        _user = _user!.copyWith(clearProfilePhoto: true);
+      } else {
+        _user = _user!.copyWith(profilePhoto: photo);
+      }
+      notifyListeners();
+    }
+  }
+
+  void clearProfilePhoto() {
+    if (_user != null) {
+      _user = _user!.copyWith(clearProfilePhoto: true);
+      notifyListeners();
+    }
   }
 
   void _setLoading(bool value) {

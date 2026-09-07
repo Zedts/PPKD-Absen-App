@@ -29,12 +29,35 @@ class SecureStorageService {
     required int id,
     required String name,
     required String email,
+    String? profilePhoto,
   }) async {
-    await Future.wait([
+    final futures = <Future<void>>[
       _storage.write(key: AppConstants.userIdKey, value: id.toString()),
       _storage.write(key: AppConstants.userNameKey, value: name),
       _storage.write(key: AppConstants.userEmailKey, value: email),
-    ]);
+    ];
+    if (profilePhoto != null && profilePhoto.trim().isNotEmpty) {
+      futures.add(_storage.write(key: AppConstants.userProfilePhotoKey, value: profilePhoto));
+    } else {
+      futures.add(_storage.delete(key: AppConstants.userProfilePhotoKey));
+    }
+    await Future.wait(futures);
+  }
+
+  Future<void> saveProfilePhoto(String photo) async {
+    if (photo.trim().isEmpty) {
+      await _storage.delete(key: AppConstants.userProfilePhotoKey);
+    } else {
+      await _storage.write(key: AppConstants.userProfilePhotoKey, value: photo);
+    }
+  }
+
+  Future<void> clearProfilePhoto() async {
+    await _storage.delete(key: AppConstants.userProfilePhotoKey);
+  }
+
+  Future<String?> getProfilePhoto() async {
+    return _storage.read(key: AppConstants.userProfilePhotoKey);
   }
 
   Future<String?> getUserName() async {

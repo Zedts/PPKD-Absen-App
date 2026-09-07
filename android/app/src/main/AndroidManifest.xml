@@ -5,7 +5,9 @@
     <application
         android:label="Absen PPKD"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true"
+        android:usesCleartextTraffic="true">
         <!-- Google Maps API Key must be placed directly under <application> -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
