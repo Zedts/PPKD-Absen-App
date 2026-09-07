@@ -1,4 +1,4 @@
-package com.example.ppkd_absen_app
+package com.zedt.absen
 
 import io.flutter.embedding.android.FlutterActivity
 
