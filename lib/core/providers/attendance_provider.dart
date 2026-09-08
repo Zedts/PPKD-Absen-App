@@ -36,7 +36,17 @@ class AttendanceProvider extends ChangeNotifier {
 
   // Today & Stats
   AttendanceModel? _todayAttendance;
-  AttendanceModel? get todayAttendance => _todayAttendance;
+  /// Returns today's attendance record only if it matches today's date.
+  AttendanceModel? get todayAttendance {
+    if (_todayAttendance == null) return null;
+    final todayStr = _formatDate(DateTime.now());
+    if (_todayAttendance!.attendanceDate != null &&
+        _todayAttendance!.attendanceDate!.isNotEmpty &&
+        _todayAttendance!.attendanceDate != todayStr) {
+      return null;
+    }
+    return _todayAttendance;
+  }
 
   AttendanceStatsModel? _stats;
   AttendanceStatsModel? get stats => _stats;
@@ -49,12 +59,13 @@ class AttendanceProvider extends ChangeNotifier {
 
   /// Whether today's attendance is marked as Izin (disables check-in).
   bool get hasIzinToday {
+    final todayStr = _formatDate(DateTime.now());
     if (_todayAttendance != null &&
+        _todayAttendance!.attendanceDate == todayStr &&
         (_todayAttendance!.status ?? '').toLowerCase() == 'izin') {
       return true;
     }
     // Fallback: check history list for today's date
-    final todayStr = _formatDate(DateTime.now());
     return _historyList.any((item) =>
         item.attendanceDate == todayStr &&
         (item.status ?? '').toLowerCase() == 'izin');
@@ -63,6 +74,13 @@ class AttendanceProvider extends ChangeNotifier {
   /// Whether the user has performed Absen Masuk today.
   bool get hasCheckedIn {
     if (hasIzinToday) return false;
+    final todayStr = _formatDate(DateTime.now());
+    if (_todayAttendance != null &&
+        _todayAttendance!.attendanceDate != null &&
+        _todayAttendance!.attendanceDate!.isNotEmpty &&
+        _todayAttendance!.attendanceDate != todayStr) {
+      return false;
+    }
     final time = _todayAttendance?.checkInTime?.trim();
     return time != null &&
         time.isNotEmpty &&
@@ -72,6 +90,13 @@ class AttendanceProvider extends ChangeNotifier {
 
   /// Whether the user has performed Absen Pulang today.
   bool get hasCheckedOut {
+    final todayStr = _formatDate(DateTime.now());
+    if (_todayAttendance != null &&
+        _todayAttendance!.attendanceDate != null &&
+        _todayAttendance!.attendanceDate!.isNotEmpty &&
+        _todayAttendance!.attendanceDate != todayStr) {
+      return false;
+    }
     final time = _todayAttendance?.checkOutTime?.trim();
     return time != null &&
         time.isNotEmpty &&
