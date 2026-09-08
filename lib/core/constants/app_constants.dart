@@ -28,6 +28,12 @@ class AppConstants {
   static const String appBuildNumber = '1';
   static const String appDescription =
       'Aplikasi Presensi Mandiri berbasis Geofencing GPS untuk peserta pelatihan Pusat Pelatihan Kerja Daerah (PPKD) Jakarta Pusat.';
-  static const String appDeveloper = 'Pusat Pelatihan Kerja Daerah Jakarta Pusat';
+  static const String appDeveloper = 'Royyan Hikmal Kautsar';
   static const String appCopyright = '© 2026 PPKD Jakarta Pusat. All Rights Reserved.';
+
+  // Legal / Policy Links
+  static const String privacyPolicyUrl =
+      'https://www.termsfeed.com/live/0e173b84-0efe-40a6-ab34-fb1aa46bce7f';
+  static const String termsOfServiceUrl =
+      'https://www.termsfeed.com/live/0e173b84-0efe-40a6-ab34-fb1aa46bce7f';
 }

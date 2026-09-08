@@ -117,7 +117,12 @@ class AttendanceProvider extends ChangeNotifier {
     if (_todayAttendance?.checkInTime != null &&
         _todayAttendance!.checkInTime!.isNotEmpty) {
       try {
-        final parts = _todayAttendance!.checkInTime!.split(':');
+        final timeOnly = _todayAttendance!.checkInTime!.contains(' ')
+            ? _todayAttendance!.checkInTime!.split(' ').last
+            : (_todayAttendance!.checkInTime!.contains('T')
+                ? _todayAttendance!.checkInTime!.split('T').last
+                : _todayAttendance!.checkInTime!);
+        final parts = timeOnly.split(':');
         if (parts.length >= 2) {
           final h = int.parse(parts[0]);
           final m = int.parse(parts[1]);
@@ -508,8 +513,6 @@ class AttendanceProvider extends ChangeNotifier {
     final now = DateTime.now();
     final dateStr = _formatDate(now);
     final timeStr = _formatTime(now);
-    final isLate = now.hour > 8 || (now.hour == 8 && now.minute > 0);
-    final statusPayload = isLate ? 'terlambat' : 'masuk';
 
     try {
       final response = await _attendanceService.checkIn({
@@ -518,7 +521,7 @@ class AttendanceProvider extends ChangeNotifier {
         'check_in_lat': _currentPosition!.latitude,
         'check_in_lng': _currentPosition!.longitude,
         'check_in_address': _currentAddress,
-        'status': statusPayload,
+        'status': 'masuk',
       });
 
       // Schedule auto-checkout if enabled
@@ -531,22 +534,22 @@ class AttendanceProvider extends ChangeNotifier {
         final model = AttendanceModel.fromJson(
           data['data'] as Map<String, dynamic>,
         );
-        _todayAttendance = isLate && (model.status ?? '').toLowerCase() != 'terlambat'
+        _todayAttendance = model.checkInTime == null || model.checkInTime!.isEmpty
             ? AttendanceModel(
                 id: model.id,
                 userId: model.userId,
-                attendanceDate: model.attendanceDate,
-                checkInTime: model.checkInTime ?? timeStr,
+                attendanceDate: model.attendanceDate ?? dateStr,
+                checkInTime: timeStr,
                 checkOutTime: model.checkOutTime,
-                checkInLat: model.checkInLat,
-                checkInLng: model.checkInLng,
+                checkInLat: model.checkInLat ?? _currentPosition!.latitude,
+                checkInLng: model.checkInLng ?? _currentPosition!.longitude,
                 checkOutLat: model.checkOutLat,
                 checkOutLng: model.checkOutLng,
-                checkInAddress: model.checkInAddress,
+                checkInAddress: model.checkInAddress ?? _currentAddress,
                 checkOutAddress: model.checkOutAddress,
                 checkInLocation: model.checkInLocation,
                 checkOutLocation: model.checkOutLocation,
-                status: 'terlambat',
+                status: model.status ?? 'masuk',
                 alasanIzin: model.alasanIzin,
               )
             : model;

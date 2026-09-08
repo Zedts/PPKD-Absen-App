@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_text_styles.dart';
@@ -38,6 +40,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _emailError;
   String? _passwordError;
   String? _confirmPasswordError;
+  String? _termsError;
 
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -48,6 +51,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int? _trainingId; // Dropdown from AuthProvider.trainings
   PickedPhotoResult? _pickedPhoto;
   String get _profilePhoto => _pickedPhoto?.base64DataUri ?? '';
+  bool _agreedToTerms = false;
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (mounted) {
+        ToastOverlay.show(context, 'Tidak dapat membuka tautan');
+      }
+    }
+  }
 
   Future<void> _handlePickPhoto() async {
     final action = await ImagePickerHelper.showSourcePicker(
@@ -146,18 +161,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _emailError = emailErr;
       _passwordError = passErr;
       _confirmPasswordError = confErr;
+      _termsError = _agreedToTerms
+          ? null
+          : 'Anda harus menyetujui Kebijakan Privasi & Ketentuan Layanan';
     });
 
     return nameErr == null &&
         emailErr == null &&
         passErr == null &&
-        confErr == null;
+        confErr == null &&
+        _agreedToTerms;
   }
 
   Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
 
-    if (!_validateAll()) return;
+    if (!_validateAll()) {
+      if (!_agreedToTerms) {
+        ToastOverlay.show(
+          context,
+          'Anda harus menyetujui Kebijakan Privasi & Ketentuan Layanan',
+        );
+      }
+      return;
+    }
 
     final authProvider = context.read<AuthProvider>();
     final selectedTrainingId = _trainingId ??
@@ -541,6 +568,119 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 color: AppColors.textLight,
                 size: 20,
               ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Privacy Policy & Terms of Service Checkbox
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: _termsError != null
+                  ? Border.all(color: AppColors.error, width: 1.5)
+                  : null,
+              color: _termsError != null
+                  ? AppColors.error.withValues(alpha: 0.04)
+                  : Colors.transparent,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: Checkbox(
+                        value: _agreedToTerms,
+                        onChanged: (val) {
+                          setState(() {
+                            _agreedToTerms = val ?? false;
+                            _termsError = null;
+                          });
+                        },
+                        activeColor: AppColors.primaryBlue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        side: BorderSide(
+                          color: _termsError != null
+                              ? AppColors.error
+                              : _agreedToTerms
+                                  ? AppColors.primaryBlue
+                                  : AppColors.textLight,
+                          width: 1.5,
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Wrap(
+                        children: [
+                          Text(
+                            'Saya menyetujui ',
+                            style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
+                          ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                _launchUrl(AppConstants.privacyPolicyUrl),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Text(
+                                'Kebijakan Privasi',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontSize: 12,
+                                  color: AppColors.primaryBlue,
+                                  fontWeight: FontWeight.w700,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppColors.primaryBlue,
+                                ),
+                              ),
+                            ),
+                          ),
+                          Text(
+                            ' dan ',
+                            style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
+                          ),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                _launchUrl(AppConstants.termsOfServiceUrl),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 2),
+                              child: Text(
+                                'Ketentuan Layanan',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  fontSize: 12,
+                                  color: AppColors.primaryBlue,
+                                  fontWeight: FontWeight.w700,
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: AppColors.primaryBlue,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (_termsError != null) ...[
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32),
+                    child: Text(
+                      _termsError!,
+                      style: AppTextStyles.errorText.copyWith(fontSize: 11),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           const SizedBox(height: 20),

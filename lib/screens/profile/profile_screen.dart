@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_constants.dart';
+import '../../core/constants/app_images.dart';
 import '../../core/providers/attendance_provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/notification_provider.dart';
@@ -28,6 +30,17 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isUploadingPhoto = false;
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    try {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      if (mounted) {
+        ToastOverlay.show(context, 'Tidak dapat membuka tautan');
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -329,27 +342,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 20),
 
-              // App Logo / Icon Badge
+              // App Icon from assets
               Container(
-                width: 68,
-                height: 68,
+                width: 72,
+                height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const RadialGradient(
-                    colors: [AppColors.primaryLight, AppColors.primaryBlue],
-                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primaryBlue.withValues(alpha: 0.3),
-                      blurRadius: 16,
+                      color: AppColors.primaryBlue.withValues(alpha: 0.25),
+                      blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: const Icon(
-                  Iconsax.building_3,
-                  color: Colors.white,
-                  size: 32,
+                child: ClipOval(
+                  child: Image.asset(
+                    AppImages.iconImg,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               const SizedBox(height: 14),
@@ -413,11 +426,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.textLight,
                     ),
                   ),
-                  Text(
-                    AppConstants.appDeveloper,
-                    style: AppTextStyles.captionSmall.copyWith(
-                      color: AppColors.textDark,
-                      fontWeight: FontWeight.bold,
+                  Flexible(
+                    child: Text(
+                      AppConstants.appDeveloper,
+                      textAlign: TextAlign.end,
+                      style: AppTextStyles.captionSmall.copyWith(
+                        color: AppColors.textDark,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],
@@ -432,11 +448,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       color: AppColors.textLight,
                     ),
                   ),
-                  Text(
-                    AppConstants.appCopyright,
-                    style: AppTextStyles.captionSmall.copyWith(
-                      color: AppColors.textDark,
-                      fontWeight: FontWeight.w600,
+                  Flexible(
+                    child: Text(
+                      AppConstants.appCopyright,
+                      textAlign: TextAlign.end,
+                      style: AppTextStyles.captionSmall.copyWith(
+                        color: AppColors.textDark,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              const Divider(color: AppColors.inputBorder, height: 1),
+              const SizedBox(height: 14),
+
+              // Privacy Policy & Terms of Service Links
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _launchUrl(AppConstants.privacyPolicyUrl),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        'Kebijakan Privasi',
+                        style: AppTextStyles.captionSmall.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primaryBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      '•',
+                      style: AppTextStyles.captionSmall.copyWith(
+                        color: AppColors.textLight,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () => _launchUrl(AppConstants.termsOfServiceUrl),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6),
+                      child: Text(
+                        'Ketentuan Layanan',
+                        style: AppTextStyles.captionSmall.copyWith(
+                          color: AppColors.primaryBlue,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
+                          decorationColor: AppColors.primaryBlue,
+                        ),
+                      ),
                     ),
                   ),
                 ],
