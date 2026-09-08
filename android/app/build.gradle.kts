@@ -1,5 +1,12 @@
 import java.util.Properties
 
+val keystoreProperties = Properties().apply {
+val f = rootProject.file("key.properties")
+    if (f.exists()) {
+    load(f.inputStream())
+    }
+}
+
 val localProperties = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) {
@@ -41,11 +48,22 @@ android {
         localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")
     }
 
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            if (signingConfigs.names.contains("release")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 }
